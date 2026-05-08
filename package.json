@@ -1,0 +1,19 @@
+{
+  "name": "lakesideoutdoors",
+  "version": "1.0.0",
+  "description": "Lakeside Outdoors CRM",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "client": "npm start --prefix client",
+    "build": "npm run build --prefix client"
+  },
+  "keywords": [],
+  "author": "Dalton Kesti",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

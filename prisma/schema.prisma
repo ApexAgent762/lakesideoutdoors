@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(CREW)
+  createdAt DateTime @default(now())
+  jobs      Job[]
+  notes     JobNote[]
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  CREW
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  name            String
+  phone           String?
+  email           String?
+  billingAddress  String?
+  serviceAddress  String?
+  propertyNotes   String?
+  gateCode        String?
+  petNotes        String?
+  sprinklerNotes  String?
+  accessNotes     String?
+  createdAt       DateTime @default(now())
+  leads           Lead[]
+  quotes          Quote[]
+  jobs            Job[]
+}
+
+model Lead {
+  id          Int        @id @default(autoincrement())
+  customerId  Int?
+  customer    Customer?  @relation(fields: [customerId], references: [id])
+  name        String
+  phone       String?
+  email       String?
+  source      LeadSource
+  status      LeadStatus @default(NEW)
+  notes       String?
+  followUpAt  DateTime?
+  createdAt   DateTime   @default(now())
+}
+
+enum LeadSource {
+  FACEBOOK
+  GOOGLE
+  REFERRAL
+  WEBSITE
+  DOOR_HANGER
+  YARD_SIGN
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  ESTIMATE_SCHEDULED
+  QUOTE_SENT
+  WON
+  LOST
+}
+
+model Quote {
+  id           Int         @id @default(autoincrement())
+  quoteNumber  String      @unique
+  customerId   Int
+  customer     Customer    @relation(fields: [customerId], references: [id])
+  status       QuoteStatus @default(DRAFT)
+  lineItems    LineItem[]
+  notes        String?
+  expiresAt    DateTime?
+  createdAt    DateTime    @default(now())
+  job          Job?
+  photos       Photo[]
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  APPROVED
+  DECLINED
+}
+
+model LineItem {
+  id          Int    @id @default(autoincrement())
+  quoteId     Int
+  quote       Quote  @relation(fields: [quoteId], references: [id])
+  serviceId   Int?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  description String
+  quantity    Float
+  unit        String?
+  unitPrice   Float
+  total       Float
+}
+
+model Service {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  unit        String?
+  unitPrice   Float
+  notes       String?
+  lineItems   LineItem[]
+}
+
+model Job {
+  id             Int       @id @default(autoincrement())
+  name           String
+  customerId     Int
+  customer       Customer  @relation(fields: [customerId], references: [id])
+  quoteId        Int?      @unique
+  quote          Quote?    @relation(fields: [quoteId], references: [id])
+  serviceAddress String?
+  description    String?
+  materialsNeeded String?
+  laborHours     Float?
+  status         JobStatus @default(SCHEDULED)
+  scheduledAt    DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  assignedUsers  User[]
+  photos         Photo[]
+  notes          JobNote[]
+}
+
+enum JobStatus {
+  SCHEDULED
+  IN_PROGRESS
+  WAITING_ON_MATERIALS
+  COMPLETED
+  NEEDS_FOLLOW_UP
+  INVOICED
+  PAID
+}
+
+model JobNote {
+  id        Int      @id @default(autoincrement())
+  jobId     Int
+  job       Job      @relation(fields: [jobId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  note      String
+  createdAt DateTime @default(now())
+}
+
+model Photo {
+  id        Int        @id @default(autoincrement())
+  url       String
+  publicId  String?
+  type      PhotoType
+  jobId     Int?
+  job       Job?       @relation(fields: [jobId], references: [id])
+  quoteId   Int?
+  quote     Quote?     @relation(fields: [quoteId], references: [id])
+  createdAt DateTime   @default(now())
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+  GENERAL
+}
