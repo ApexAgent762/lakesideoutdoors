@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 require('dotenv').config();
 
@@ -16,15 +17,13 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Lakeside Outdoors API is running' });
+// Serve React frontend in production
+app.use(express.static(path.join(__dirname, '../client/build')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-
-server.on('error', (err) => {
-  console.error('Server error:', err);
 });
