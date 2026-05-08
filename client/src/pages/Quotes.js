@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { MdAdd, MdClose, MdAdd as MdAddItem } from 'react-icons/md';
+import { MdAdd, MdClose } from 'react-icons/md';
 
 const STATUS_COLORS = { DRAFT:'bg-gray-500/20 text-gray-400', SENT:'bg-blue-500/20 text-blue-400', APPROVED:'bg-green-500/20 text-green-400', DECLINED:'bg-red-500/20 text-red-400' };
 
@@ -10,7 +10,7 @@ export default function Quotes() {
   const [services, setServices] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [form, setForm] = useState({ customerId:'', notes:'', expiresAt:'', lineItems:[{ description:'', quantity:1, unit:'', unitPrice:0, serviceId:'' }] });
+  const [form, setForm] = useState({ customerId:'', notes:'', expiresAt:'', lineItems:[{ description:'', quantity:1, unit:'', unitPrice:0, serviceId:'', customName:'' }] });
 
   useEffect(() => {
     api.get('/quotes').then(r => setQuotes(r.data));
@@ -18,14 +18,26 @@ export default function Quotes() {
     api.get('/services').then(r => setServices(r.data));
   }, []);
 
-  const addLineItem = () => setForm({...form, lineItems:[...form.lineItems, { description:'', quantity:1, unit:'', unitPrice:0, serviceId:'' }]});
+  const addLineItem = () => setForm({...form, lineItems:[...form.lineItems, { description:'', quantity:1, unit:'', unitPrice:0, serviceId:'', customName:'' }]});
   const removeLineItem = (i) => setForm({...form, lineItems: form.lineItems.filter((_,idx) => idx !== i)});
+  
   const updateLineItem = (i, field, value) => {
     const items = [...form.lineItems];
     items[i] = {...items[i], [field]: value};
     if (field === 'serviceId' && value) {
       const svc = services.find(s => s.id === parseInt(value));
-      if (svc) { items[i].description = svc.description || svc.name; items[i].unitPrice = svc.unitPrice; items[i].unit = svc.unit || ''; }
+      if (svc) {
+        items[i].customName = svc.name;
+        items[i].description = svc.description || svc.name;
+        items[i].unitPrice = svc.unitPrice;
+        items[i].unit = svc.unit || '';
+      }
+    }
+    if (field === 'serviceId' && !value) {
+      items[i].customName = '';
+      items[i].description = '';
+      items[i].unitPrice = 0;
+      items[i].unit = '';
     }
     setForm({...form, lineItems: items});
   };
@@ -35,10 +47,17 @@ export default function Quotes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/quotes', {...form, customerId: parseInt(form.customerId)});
+      const res = await api.post('/quotes', {
+        ...form,
+        customerId: parseInt(form.customerId),
+        lineItems: form.lineItems.map(item => ({
+          ...item,
+          description: item.customName || item.description
+        }))
+      });
       setQuotes([res.data, ...quotes]);
       setShowForm(false);
-      setForm({ customerId:'', notes:'', expiresAt:'', lineItems:[{ description:'', quantity:1, unit:'', unitPrice:0, serviceId:'' }] });
+      setForm({ customerId:'', notes:'', expiresAt:'', lineItems:[{ description:'', quantity:1, unit:'', unitPrice:0, serviceId:'', customName:'' }] });
     } catch { alert('Error creating quote'); }
   };
 
@@ -142,19 +161,34 @@ export default function Quotes() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-gray-400 text-sm">Line Items</label>
                   <button type="button" onClick={addLineItem} className="text-lakeside-blue text-sm flex items-center gap-1 hover:text-blue-300">
-                    <MdAddItem size={16} />Add Item
+                    <MdAdd size={16} />Add Item
                   </button>
                 </div>
                 {form.lineItems.map((item, i) => (
                   <div key={i} className="bg-lakeside-dark border border-lakeside-border rounded-lg p-3 mb-2">
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       <div>
-                        <label className="text-gray-500 text-xs block mb-1">Service Template</label>
-                        <select value={item.serviceId} onChange={e => updateLineItem(i, 'serviceId', e.target.value)}
-                          className="w-full bg-lakeside-darker border border-lakeside-border rounded px-2 py-1.5 text-white text-xs">
-                          <option value="">Custom...</option>
-                          {services.map(s => <option key={s.id} value={s.id}>{s.name} — ${s.unitPrice}/{s.unit}</option>)}
-                        </select>
+                        <label className="text-gray-500 text-xs block mb-1">Service (select or type)</label>
+                        <input
+                          list={`services-${i}`}
+                          value={item.customName}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const matched = services.find(s => s.name === val);
+                            if (matched) {
+                              updateLineItem(i, 'serviceId', matched.id.toString());
+                            } else {
+                              const items = [...form.lineItems];
+                              items[i] = {...items[i], customName: val, serviceId: ''};
+                              setForm({...form, lineItems: items});
+                            }
+                          }}
+                          placeholder="Type or select a service..."
+                          className="w-full bg-lakeside-darker border border-lakeside-border rounded px-2 py-1.5 text-white text-xs"
+                        />
+                        <datalist id={`services-${i}`}>
+                          {services.map(s => <option key={s.id} value={s.name} />)}
+                        </datalist>
                       </div>
                       <div>
                         <label className="text-gray-500 text-xs block mb-1">Description</label>
@@ -174,14 +208,18 @@ export default function Quotes() {
                           className="w-full bg-lakeside-darker border border-lakeside-border rounded px-2 py-1.5 text-white text-xs" />
                       </div>
                       <div>
-                        <label className="text-gray-500 text-xs block mb-1">Unit Price</label>
+                        <label className="text-gray-500 text-xs block mb-1">Unit Price ($)</label>
                         <input type="number" value={item.unitPrice} onChange={e => updateLineItem(i, 'unitPrice', e.target.value)}
                           className="w-full bg-lakeside-darker border border-lakeside-border rounded px-2 py-1.5 text-white text-xs" />
                       </div>
                     </div>
                     <div className="flex justify-between items-center mt-2">
-                      <p className="text-lakeside-blue text-sm font-medium">Subtotal: ${((parseFloat(item.quantity)||0)*(parseFloat(item.unitPrice)||0)).toFixed(2)}</p>
-                      {form.lineItems.length > 1 && <button type="button" onClick={() => removeLineItem(i)} className="text-red-400 text-xs hover:text-red-300">Remove</button>}
+                      <p className="text-lakeside-blue text-sm font-medium">
+                        Subtotal: ${((parseFloat(item.quantity)||0)*(parseFloat(item.unitPrice)||0)).toFixed(2)}
+                      </p>
+                      {form.lineItems.length > 1 && (
+                        <button type="button" onClick={() => removeLineItem(i)} className="text-red-400 text-xs hover:text-red-300">Remove</button>
+                      )}
                     </div>
                   </div>
                 ))}
