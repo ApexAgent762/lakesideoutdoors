@@ -1,8 +1,8 @@
-[phases.setup]
-nixPkgs = ["nodejs"]
+[phases.install]
+cmds = ["npm install", "cd client && npm install && cd .."]
 
 [phases.build]
-cmds = ["npm install", "npm run build"]
+cmds = ["cd client && npm run build && cd .."]
 
 [phases.start]
 cmd = "node server/index.js"
