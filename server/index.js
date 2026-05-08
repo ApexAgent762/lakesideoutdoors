@@ -17,9 +17,9 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 
-// Serve React frontend in production
 app.use(express.static(path.join(__dirname, '../client/build')));
-app.get('*', (req, res) => {
+
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
