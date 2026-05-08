@@ -9,7 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes (we'll add these as we build)
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/customers', require('./routes/customers'));
+app.use('/api/leads', require('./routes/leads'));
+app.use('/api/quotes', require('./routes/quotes'));
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/services', require('./routes/services'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+
 app.get('/', (req, res) => {
   res.json({ message: 'Lakeside Outdoors API is running' });
 });

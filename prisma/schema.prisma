@@ -11,6 +11,7 @@ model User {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
+  username  String?  @unique
   password  String
   role      Role     @default(CREW)
   createdAt DateTime @default(now())
@@ -46,7 +47,7 @@ model Lead {
   id          Int        @id @default(autoincrement())
   customerId  Int?
   customer    Customer?  @relation(fields: [customerId], references: [id])
-  name        String
+  name        String   @unique
   phone       String?
   email       String?
   source      LeadSource
@@ -111,7 +112,7 @@ model LineItem {
 
 model Service {
   id          Int        @id @default(autoincrement())
-  name        String
+  name        String   @unique
   description String?
   unit        String?
   unitPrice   Float

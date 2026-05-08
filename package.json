@@ -7,7 +7,8 @@
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
     "client": "npm start --prefix client",
-    "build": "npm run build --prefix client"
+    "build": "npm run build --prefix client",
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "Dalton Kesti",
@@ -15,5 +16,16 @@
   "type": "commonjs",
   "devDependencies": {
     "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "prisma": "^5.22.0"
   }
 }
